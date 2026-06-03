@@ -14,14 +14,31 @@ app.use(helmet());
 app.set("trust proxy", 1);
 
 // CORS
+const allowedOrigins = [
+  "https://study-buddy-client-tawny.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
+if (env.FRONTEND_URL && !allowedOrigins.includes(env.FRONTEND_URL)) {
+  allowedOrigins.push(env.FRONTEND_URL);
+}
+
 app.use(
   cors({
-    origin: [env.FRONTEND_URL, "http://localhost:5173"],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Handle preflight for all routes
+app.options("*", cors());
 
 // Rate limiting
 app.use(globalRateLimit);
