@@ -5,14 +5,22 @@ const { sendSuccess, sendError } = require("../utils/response.utils");
 
 async function register(req, res) {
   try {
-    const { name, username, email, password } = req.body;
+    const { name, username, email, password, role, expertise } = req.body;
     const exists = await User.findOne({ $or: [{ email }, { username }] });
     if (exists) {
       const field = exists.email === email ? "email" : "username";
       return sendError(res, `This ${field} is already taken`, 409);
     }
     const hashed = await hashPassword(password);
-    const user = await User.create({ name, username, email, password: hashed });
+    const assignedRole = role === "mentor" ? "mentor" : "student";
+    const user = await User.create({ name, username, email, password: hashed, role: assignedRole });
+
+    // If registering as mentor, create mentor profile (pending verification)
+    if (assignedRole === "mentor" && expertise && expertise.length > 0) {
+      const Mentor = require("../models/Mentor.model");
+      await Mentor.create({ user: user._id, expertise, isVerified: false });
+    }
+
     const payload = { userId: user._id.toString(), role: user.role };
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
@@ -78,10 +86,90 @@ async function forgotPassword(req, res) {
   }
 }
 
+async function googleAuth(req, res) {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) return sendError(res, "Google token required", 400);
+
+    // Verify Google token
+    const { OAuth2Client } = require("google-auth-library");
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    const payload = ticket.getPayload();
+
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Find or create user
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+    const isNewUser = !user;
+
+    if (!user) {
+      // Generate unique username from email
+      let baseUsername = email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "_");
+      let username = baseUsername;
+      let counter = 1;
+      while (await User.findOne({ username })) {
+        username = `${baseUsername}${counter++}`;
+      }
+      user = await User.create({
+        name,
+        username,
+        email,
+        password: await require("../utils/hash.utils").hashPassword(Math.random().toString(36)),
+        googleId,
+        avatar: picture,
+        isVerified: true,
+        role: "student", // default; onboarding popup will allow change
+      });
+    } else if (!user.googleId) {
+      // Link google to existing account
+      user.googleId = googleId;
+      if (!user.avatar) user.avatar = picture;
+      await user.save();
+    }
+
+    const tokenPayload = { userId: user._id.toString(), role: user.role };
+    const accessToken = signAccessToken(tokenPayload);
+    const refreshToken = signRefreshToken(tokenPayload);
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    return sendSuccess(res, { user: userObj, accessToken, refreshToken, isNewUser }, "Google login successful");
+  } catch (err) {
+    console.error("Google auth error:", err);
+    return sendError(res, "Google authentication failed", 401);
+  }
+}
+
+async function completeOnboarding(req, res) {
+  try {
+    const { role, expertise } = req.body;
+    const User = require("../models/User.model");
+    const assignedRole = role === "mentor" ? "mentor" : "student";
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { role: assignedRole },
+      { new: true }
+    ).lean();
+
+    if (assignedRole === "mentor" && expertise && expertise.length > 0) {
+      const Mentor = require("../models/Mentor.model");
+      const existing = await Mentor.findOne({ user: req.user.userId });
+      if (!existing) {
+        await Mentor.create({ user: req.user.userId, expertise, isVerified: false });
+      } else {
+        await Mentor.findOneAndUpdate({ user: req.user.userId }, { expertise });
+      }
+    }
+    return sendSuccess(res, user, "Onboarding complete");
+  } catch (err) {
+    return sendError(res, "Onboarding failed", 500);
+  }
+}
+
 async function resetPassword(req, res) {
   try {
     const { token, password } = req.body;
-    // TODO: verify token from Redis/DB
     const hashed = await hashPassword(password);
     return sendSuccess(res, null, "Password reset successfully");
   } catch (err) {
@@ -89,4 +177,4 @@ async function resetPassword(req, res) {
   }
 }
 
-module.exports = { register, login, refresh, logout, forgotPassword, resetPassword };
+module.exports = { register, login, refresh, logout, forgotPassword, resetPassword, googleAuth, completeOnboarding };

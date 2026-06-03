@@ -5,6 +5,8 @@ const registerSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-z0-9_]+$/, "Lowercase letters, numbers, and underscores only"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters").max(100),
+  role: z.enum(["student", "mentor"]).optional().default("student"),
+  expertise: z.array(z.string()).optional().default([]),
 });
 
 const loginSchema = z.object({

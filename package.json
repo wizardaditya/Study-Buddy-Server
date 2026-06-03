@@ -4,8 +4,7 @@
   "private": true,
   "main": "src/server.js",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "dev": "nodemon src/server.js",
@@ -22,6 +21,7 @@
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "google-auth-library": "^10.6.2",
     "helmet": "^7.1.0",
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
@@ -34,10 +34,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3",
-    "eslint": "^8.56.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "eslint": "^8.56.0",
+    "nodemon": "^3.0.3"
   }
 }

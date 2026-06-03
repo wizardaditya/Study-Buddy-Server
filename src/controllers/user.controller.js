@@ -106,4 +106,41 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { getMe, updateMe, getProfile, followUser, unfollowUser, getLeaderboard, changePassword };
+async function getUsers(req, res) {
+  try {
+    const { role, search, page = 1, limit = 20 } = req.query;
+    const filter = { isActive: true };
+    if (role && ["student", "mentor"].includes(role)) filter.role = role;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+      ];
+    }
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select("name username avatar bio role followersCount followingCount skills city state")
+        .sort({ followersCount: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      User.countDocuments(filter),
+    ]);
+
+    // Add isFollowing flag for each user
+    let followingSet = new Set();
+    if (req.user) {
+      const Follow = require("../models/Follow.model");
+      const follows = await Follow.find({ follower: req.user.userId, following: { $in: users.map(u => u._id) } }).lean();
+      followingSet = new Set(follows.map(f => f.following.toString()));
+    }
+
+    const usersWithFollow = users.map(u => ({ ...u, isFollowing: followingSet.has(u._id.toString()) }));
+    return sendSuccess(res, { users: usersWithFollow, total, page: parseInt(page) });
+  } catch (err) {
+    return sendError(res, "Failed to get users", 500);
+  }
+}
+
+module.exports = { getMe, updateMe, getProfile, followUser, unfollowUser, getLeaderboard, changePassword, getUsers };
