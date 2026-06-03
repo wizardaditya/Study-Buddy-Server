@@ -7,6 +7,7 @@ router.use("/doubts", require("./doubt.routes"));
 router.use("/mentors", require("./mentor.routes"));
 router.use("/rooms", require("./room.routes"));
 router.use("/tests", require("./test.routes"));
+router.use("/projects", require("./project.routes"));
 router.use("/aura", require("./aura.routes"));
 router.use("/subscriptions", require("./subscription.routes"));
 router.use("/notifications", require("./notification.routes"));

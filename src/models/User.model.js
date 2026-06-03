@@ -30,8 +30,9 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-UserSchema.index({ email: 1 });
-UserSchema.index({ username: 1 });
+// Only use schema.index() — remove duplicates by NOT using index:true on email/username above
+// (unique:true on field definition is enough, no need for extra schema.index)
 UserSchema.index({ xp: -1 });
+UserSchema.index({ currentStreak: -1 });
 
 module.exports = mongoose.model("User", UserSchema);
