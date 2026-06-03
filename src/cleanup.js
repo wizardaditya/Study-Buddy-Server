@@ -1,5 +1,5 @@
 /**
- * Cleanup Script — removes demo student and all their data
+ * Cleanup Script — wipes ALL dummy/seed data except admin user
  * Usage: node src/cleanup.js
  */
 
@@ -16,48 +16,74 @@ const Answer = require("./models/Answer.model");
 const Follow = require("./models/Follow.model");
 const Notification = require("./models/Notification.model");
 const Project = require("./models/Project.model");
+const MockTest = require("./models/MockTest.model");
+const HiringPost = require("./models/HiringPost.model");
+const Topic = require("./models/Topic.model");
+const AuraSession = require("./models/AuraSession.model");
+const AuraMemory = require("./models/AuraMemory.model");
+const Streak = require("./models/Streak.model");
+const StudyRoom = require("./models/StudyRoom.model");
+const Message = require("./models/Message.model");
+const Subscription = require("./models/Subscription.model");
+const TestAttempt = require("./models/TestAttempt.model");
 
 async function cleanup() {
   try {
     await mongoose.connect(env.DATABASE_URL);
     console.log("✅ Connected to MongoDB\n");
+    console.log("🗑️  Starting full cleanup...\n");
 
-    // Find demo student
-    const demoUser = await User.findOne({ email: "demo@studybuddy.in" });
-    if (!demoUser) {
-      console.log("ℹ️  Demo student not found — nothing to delete");
-      return;
-    }
+    // Delete all non-admin users
+    const deletedUsers = await User.deleteMany({ role: { $ne: "admin" } });
+    console.log(`   Users deleted        : ${deletedUsers.deletedCount}`);
 
-    const userId = demoUser._id;
-    console.log(`🗑️  Found demo student: ${demoUser.name} (${demoUser.email})`);
-    console.log("   Deleting all associated data...\n");
+    // Delete ALL community/content data
+    const [
+      posts, comments, likes, doubts, answers,
+      follows, notifications, projects, mockTests,
+      hiringPosts, topics, auraSessions, auraMemories,
+      streaks, rooms, messages, subscriptions, testAttempts
+    ] = await Promise.all([
+      Post.deleteMany({}),
+      Comment.deleteMany({}),
+      Like.deleteMany({}),
+      Doubt.deleteMany({}),
+      Answer.deleteMany({}),
+      Follow.deleteMany({}),
+      Notification.deleteMany({}),
+      Project.deleteMany({}),
+      MockTest.deleteMany({}),
+      HiringPost.deleteMany({}),
+      Topic.deleteMany({}),
+      AuraSession.deleteMany({}),
+      AuraMemory.deleteMany({}),
+      Streak.deleteMany({}),
+      StudyRoom.deleteMany({}),
+      Message.deleteMany({}),
+      Subscription.deleteMany({}),
+      TestAttempt.deleteMany({}),
+    ]);
 
-    // Delete all data belonging to demo student
-    const [posts, comments, likes, doubts, answers, follows, notifications, projects] =
-      await Promise.all([
-        Post.deleteMany({ author: userId }),
-        Comment.deleteMany({ author: userId }),
-        Like.deleteMany({ user: userId }),
-        Doubt.deleteMany({ author: userId }),
-        Answer.deleteMany({ author: userId }),
-        Follow.deleteMany({ $or: [{ follower: userId }, { following: userId }] }),
-        Notification.deleteMany({ $or: [{ recipient: userId }, { sender: userId }] }),
-        Project.deleteMany({ owner: userId }),
-      ]);
-
-    console.log(`   Posts deleted       : ${posts.deletedCount}`);
-    console.log(`   Comments deleted    : ${comments.deletedCount}`);
-    console.log(`   Likes deleted       : ${likes.deletedCount}`);
-    console.log(`   Doubts deleted      : ${doubts.deletedCount}`);
-    console.log(`   Answers deleted     : ${answers.deletedCount}`);
-    console.log(`   Follows deleted     : ${follows.deletedCount}`);
+    console.log(`   Posts deleted        : ${posts.deletedCount}`);
+    console.log(`   Comments deleted     : ${comments.deletedCount}`);
+    console.log(`   Likes deleted        : ${likes.deletedCount}`);
+    console.log(`   Doubts deleted       : ${doubts.deletedCount}`);
+    console.log(`   Answers deleted      : ${answers.deletedCount}`);
+    console.log(`   Follows deleted      : ${follows.deletedCount}`);
     console.log(`   Notifications deleted: ${notifications.deletedCount}`);
-    console.log(`   Projects deleted    : ${projects.deletedCount}`);
+    console.log(`   Projects deleted     : ${projects.deletedCount}`);
+    console.log(`   Mock Tests deleted   : ${mockTests.deletedCount}`);
+    console.log(`   Hiring Posts deleted : ${hiringPosts.deletedCount}`);
+    console.log(`   Topics deleted       : ${topics.deletedCount}`);
+    console.log(`   Aura Sessions deleted: ${auraSessions.deletedCount}`);
+    console.log(`   Aura Memories deleted: ${auraMemories.deletedCount}`);
+    console.log(`   Streaks deleted      : ${streaks.deletedCount}`);
+    console.log(`   Study Rooms deleted  : ${rooms.deletedCount}`);
+    console.log(`   Messages deleted     : ${messages.deletedCount}`);
+    console.log(`   Subscriptions deleted: ${subscriptions.deletedCount}`);
+    console.log(`   Test Attempts deleted: ${testAttempts.deletedCount}`);
 
-    // Finally delete the user
-    await User.deleteOne({ _id: userId });
-    console.log("\n✅ Demo student user deleted");
+    console.log("\n✅ Database is clean — only admin user remains");
     console.log("🎉 Cleanup complete!\n");
 
   } catch (err) {
