@@ -11,6 +11,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seed.js",
+    "cleanup": "node src/cleanup.js",
     "lint": "eslint src --ext .js"
   },
   "dependencies": {
