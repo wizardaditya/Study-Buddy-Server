@@ -1,8 +1,23 @@
 const User = require("../models/User.model");
 const Mentor = require("../models/Mentor.model");
 const Doubt = require("../models/Doubt.model");
+const Answer = require("../models/Answer.model");
 const Post = require("../models/Post.model");
+const Comment = require("../models/Comment.model");
+const Like = require("../models/Like.model");
+const Follow = require("../models/Follow.model");
+const Notification = require("../models/Notification.model");
+const Project = require("../models/Project.model");
+const MockTest = require("../models/MockTest.model");
+const HiringPost = require("../models/HiringPost.model");
+const Topic = require("../models/Topic.model");
+const AuraSession = require("../models/AuraSession.model");
+const AuraMemory = require("../models/AuraMemory.model");
+const Streak = require("../models/Streak.model");
+const StudyRoom = require("../models/StudyRoom.model");
+const Message = require("../models/Message.model");
 const Subscription = require("../models/Subscription.model");
+const TestAttempt = require("../models/TestAttempt.model");
 const { sendSuccess, sendError } = require("../utils/response.utils");
 const { startOfDay } = require("../utils/date.utils");
 
@@ -62,4 +77,40 @@ async function verifyMentor(req, res) {
   }
 }
 
-module.exports = { getStats, getUsers, banUser, getPendingMentors, verifyMentor };
+async function purgeAllData(req, res) {
+  try {
+    const adminId = req.user._id;
+
+    // Delete all non-admin users
+    await User.deleteMany({ role: { $ne: "admin" } });
+
+    // Delete all content collections
+    await Promise.all([
+      Post.deleteMany({}),
+      Comment.deleteMany({}),
+      Like.deleteMany({}),
+      Doubt.deleteMany({}),
+      Answer.deleteMany({}),
+      Follow.deleteMany({}),
+      Notification.deleteMany({}),
+      Project.deleteMany({}),
+      MockTest.deleteMany({}),
+      HiringPost.deleteMany({}),
+      Topic.deleteMany({}),
+      AuraSession.deleteMany({}),
+      AuraMemory.deleteMany({}),
+      Streak.deleteMany({}),
+      StudyRoom.deleteMany({}),
+      Message.deleteMany({}),
+      Subscription.deleteMany({}),
+      TestAttempt.deleteMany({}),
+      Mentor.deleteMany({}),
+    ]);
+
+    return sendSuccess(res, null, "All dummy data purged. Database is clean.");
+  } catch (err) {
+    return sendError(res, "Purge failed: " + err.message, 500);
+  }
+}
+
+module.exports = { getStats, getUsers, banUser, getPendingMentors, verifyMentor, purgeAllData };
