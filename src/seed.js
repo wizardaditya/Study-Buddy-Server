@@ -49,26 +49,10 @@ async function seed() {
       console.log("ℹ️  Admin user already exists");
     }
 
-    const studentExists = await User.findOne({ email: "demo@studybuddy.in" });
-    if (!studentExists) {
-      const hashed = await hashPassword("Demo@1234");
-      await User.create({
-        name: "Demo Student",
-        username: "demo_student",
-        email: "demo@studybuddy.in",
-        password: hashed,
-        role: "student",
-        plan: "free",
-        xp: 250,
-        level: 3,
-        currentStreak: 5,
-        bio: "Learning Robotics & AI 🤖",
-        city: "Mumbai",
-        state: "Maharashtra",
-      });
-      console.log("✅ Demo student created — email: demo@studybuddy.in | password: Demo@1234");
-    } else {
-      console.log("ℹ️  Demo student already exists");
+    // Remove demo student if it exists
+    const studentDeleted = await User.deleteOne({ email: "demo@studybuddy.in" });
+    if (studentDeleted.deletedCount > 0) {
+      console.log("🗑️  Demo student removed");
     }
 
     // ── Topics ─────────────────────────────────────────────
@@ -284,8 +268,7 @@ async function seed() {
 
     console.log("\n🎉 Seed complete!\n");
     console.log("Login credentials:");
-    console.log("  Admin  → admin@studybuddy.in  / Admin@1234");
-    console.log("  Student→ demo@studybuddy.in   / Demo@1234\n");
+    console.log("  Admin  → admin@studybuddy.in  / Admin@1234\n");
 
   } catch (err) {
     console.error("❌ Seed failed:", err.message);
