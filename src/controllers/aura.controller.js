@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require("crypto");
+const crypto = require("crypto");
 const AuraSession = require("../models/AuraSession.model");
 const AuraMemory = require("../models/AuraMemory.model");
 const User = require("../models/User.model");
@@ -43,7 +43,7 @@ async function chat(req, res) {
       session = await AuraSession.findOne({ sessionId: sid, user: req.user.userId });
     }
     if (!session) {
-      sid = uuidv4().replace(/-/g, "").slice(0, 16);
+      sid = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
       session = await AuraSession.create({ user: req.user.userId, sessionId: sid, messages: [] });
     }
 
