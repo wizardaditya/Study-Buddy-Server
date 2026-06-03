@@ -4,9 +4,9 @@ services:
     runtime: node
     region: singapore
     plan: free
-    rootDir: apps/server
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -17,11 +17,17 @@ services:
       - key: REDIS_URL
         sync: false
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: JWT_REFRESH_SECRET
-        generateValue: true
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
@@ -38,4 +44,3 @@ services:
         value: hello@studybuddy.in
       - key: FRONTEND_URL
         sync: false
-    healthCheckPath: /api/health

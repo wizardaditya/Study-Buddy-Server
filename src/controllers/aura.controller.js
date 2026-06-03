@@ -3,7 +3,7 @@ const AuraSession = require("../models/AuraSession.model");
 const AuraMemory = require("../models/AuraMemory.model");
 const User = require("../models/User.model");
 const { openai, OPENAI_MODEL } = require("../config/openai");
-const { redis } = require("../config/redis");
+const { getRedis } = require("../config/redis");
 const { sendSuccess, sendError } = require("../utils/response.utils");
 
 const SYSTEM_PROMPT = `You are Aura, an expert AI study companion built exclusively for students learning Robotics, IoT, and Artificial Intelligence in India. You are warm, encouraging, and deeply knowledgeable.
@@ -30,6 +30,7 @@ async function chat(req, res) {
 
     // Check daily limit for free users
     if (user.plan === "free") {
+      const redis = getRedis();
       const key = `aura:daily:${req.user.userId}:${new Date().toDateString()}`;
       const used = await redis.incr(key);
       await redis.expire(key, 86400);
@@ -54,6 +55,8 @@ async function chat(req, res) {
       ...history,
       { role: "user", content: message },
     ];
+
+    if (!openai) return sendError(res, "Aura AI is not configured. Please add OPENAI_API_KEY.", 503);
 
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL,

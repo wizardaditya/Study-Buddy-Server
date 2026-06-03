@@ -2,8 +2,7 @@ const http = require("http");
 const app = require("./app");
 const env = require("./config/env");
 const { connectDatabase } = require("./config/database");
-const { connectRedis } = require("./config/redis");
-const { initSocket } = require("./sockets/socket.server");
+const { connectRedis } = require("./config/redis");const { initSocket } = require("./sockets/socket.server");
 
 // Load cloudinary config (side effects)
 require("./config/cloudinary");
