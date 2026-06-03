@@ -1,11 +1,16 @@
 require("dotenv").config();
 
 function required(key) {
-  if (!process.env[key]) {
+  const value = process.env[key];
+  if (!value) {
+    // During build phase (npm install), env vars may not be set — skip exit
+    if (process.env.npm_lifecycle_event === "install") {
+      return "";
+    }
     console.error(`❌ Missing required env variable: ${key}`);
     process.exit(1);
   }
-  return process.env[key];
+  return value;
 }
 
 function optional(key, defaultValue = "") {
