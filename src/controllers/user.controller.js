@@ -2,6 +2,7 @@ const User = require("../models/User.model");
 const Follow = require("../models/Follow.model");
 const { sendSuccess, sendError, sendPaginated } = require("../utils/response.utils");
 const { getPagination } = require("../utils/pagination.utils");
+const { hashPassword, comparePassword } = require("../utils/hash.utils");
 
 async function getMe(req, res) {
   try {
@@ -84,4 +85,25 @@ async function getLeaderboard(req, res) {
   }
 }
 
-module.exports = { getMe, updateMe, getProfile, followUser, unfollowUser, getLeaderboard };
+async function changePassword(req, res) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return sendError(res, "Current and new password are required", 400);
+    }
+    if (newPassword.length < 8) {
+      return sendError(res, "New password must be at least 8 characters", 400);
+    }
+    const user = await User.findById(req.user.userId).select("+password");
+    if (!user) return sendError(res, "User not found", 404);
+    const valid = await comparePassword(currentPassword, user.password);
+    if (!valid) return sendError(res, "Current password is incorrect", 401);
+    user.password = await hashPassword(newPassword);
+    await user.save();
+    return sendSuccess(res, null, "Password changed successfully");
+  } catch (err) {
+    return sendError(res, "Failed to change password", 500);
+  }
+}
+
+module.exports = { getMe, updateMe, getProfile, followUser, unfollowUser, getLeaderboard, changePassword };
