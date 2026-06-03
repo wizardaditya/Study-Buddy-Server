@@ -4,6 +4,7 @@ services:
     runtime: node
     region: singapore
     plan: free
+    rootDir: .
     buildCommand: npm install
     startCommand: node src/server.js
     healthCheckPath: /api/health
