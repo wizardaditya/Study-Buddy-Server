@@ -2,18 +2,35 @@ const Post = require("../models/Post.model");
 const Like = require("../models/Like.model");
 const Comment = require("../models/Comment.model");
 const User = require("../models/User.model");
+const Follow = require("../models/Follow.model");
 const { sendSuccess, sendError, sendPaginated } = require("../utils/response.utils");
 const { getPagination } = require("../utils/pagination.utils");
 
 async function getFeed(req, res) {
   try {
     const { page, limit, skip } = getPagination(req.query);
-    const total = await Post.countDocuments({ isDeleted: false });
-    const posts = await Post.find({ isDeleted: false })
+
+    let filter = { isDeleted: false };
+
+    // If authenticated, show followed users' posts + own posts first, then others
+    if (req.user) {
+      const followedUsers = await Follow.find({ follower: req.user.userId }).lean();
+      const followedIds = followedUsers.map((f) => f.following);
+      // Include own posts + followed users' posts
+      if (followedIds.length > 0) {
+        filter.author = { $in: [...followedIds, req.user.userId] };
+      } else {
+        // Not following anyone — show all posts (discovery mode)
+        filter = { isDeleted: false };
+      }
+    }
+
+    const total = await Post.countDocuments(filter);
+    const posts = await Post.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate("author", "name username avatar xp level plan")
+      .populate("author", "name username avatar xp level plan role")
       .lean();
 
     // Attach isLiked if authenticated

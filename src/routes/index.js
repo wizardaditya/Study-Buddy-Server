@@ -14,6 +14,7 @@ router.use("/notifications", require("./notification.routes"));
 router.use("/upload", require("./upload.routes"));
 router.use("/hiring", require("./hiring.routes"));
 router.use("/admin", require("./admin.routes"));
+router.use("/search", require("./search.routes"));
 
 // Health check
 router.get("/health", (req, res) => {
